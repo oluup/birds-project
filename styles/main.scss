@@ -1,0 +1,13 @@
+// Fonts
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+// Libs
+@import "./libs/reset.scss";
+@import "./libs/variables.scss";
+
+// modules
+@import "../node_modules/bootstrap/scss/bootstrap.scss";
+
+body, html {
+    background-color: gold;
+}
