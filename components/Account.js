@@ -122,7 +122,7 @@ export default class Account extends Component {
       publicRuntimeConfig.COLLECTION_ADDRESS
     );
 
-    const total = await this.contract.contract.methods.totalSupply().call();
+    const total = await this.contract.totalSupply();
 
     this.setState({
       isLoading: false,
