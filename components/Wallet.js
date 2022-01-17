@@ -31,7 +31,7 @@ const WalletContent = Styled.div`
   text-align: center;
 `;
 
-const BIT_BIRDS_ADDRESS = "0x4cc04F9Bd875212F3887dDE31acEe04984f3B730";
+const BIT_BIRDS_ADDRESS = "0x95507DB57e64cBaC0F5d8211C3c86Eeb1E2132A1";
 const MINT_AMOUNT = "0.03";
 
 const Wallet = () => {
@@ -46,7 +46,6 @@ const Wallet = () => {
     return fetch(`/static/images/birds/${BIRD_INDEX}.png`)
       .then((r) => r.blob())
       .then(async (image) => {
-
         // ipfs upload
         const tokenURI = await OluupNode.ipfs({
           name: `Bird #${BIRD_INDEX}`,
@@ -71,13 +70,10 @@ const Wallet = () => {
           ],
         });
 
-        console.log(tokenURI);
-
         contract.mint({
           tokenURI,
           from: wallet.account,
-          buyAmount: MINT_AMOUNT,
-          mintAmount: MINT_AMOUNT,
+          price: MINT_AMOUNT,
         });
       });
   };
