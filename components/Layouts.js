@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Styled from "styled-components";
+import Head from 'next/head';
 
 const HeaderContent = Styled.header`
     text-align: center;
@@ -40,6 +41,11 @@ export class Layout extends Component {
   render() {
     return (
       <div className="container">
+        <Head>
+          <title>Bit Birds NFT ~ Test collection for Oluup.</title>
+          <link rel="icon" type="image/png" href="/favicon.png" />
+        </Head>
+        
         <Header />
         {this.props.children}
         <Footer />
