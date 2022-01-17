@@ -91,37 +91,55 @@ const DetailContent = Styled.div`
     }
 `;
 
+const TotalMintedText = Styled.span`
+    font-size: 30px;
+    color: #005670;
+    text-decoration: underline;
+    margin-bottom: 20px;
+    display: block;
+`;
+
 const { publicRuntimeConfig } = getConfig();
 
 export default class Account extends Component {
   state = {
-    isLoading: false,
+    isLoading: true,
     detail: null,
 
     transactionHash: null,
-    loadingStep: null,
+    step: "CONNECTING OLUUP",
     tokenId: null,
+    total: 0,
   };
 
-  async mint() {
+  async componentDidMount() {
     const { wallet } = this.props;
 
-    this.setState({
-      isLoading: true,
-      step: "CONNECT_OLUUP",
-    });
+    this.OluupNode = new Oluup(wallet.ethereum);
 
-    const OluupNode = new Oluup(wallet.ethereum);
-    const contract = await OluupNode.contract(
+    this.contract = await this.OluupNode.contract(
       "Single",
       publicRuntimeConfig.COLLECTION_ADDRESS
     );
+
+    const total = await this.contract.contract.methods.totalSupply().call();
+
+    this.setState({
+      isLoading: false,
+      step: null,
+      total,
+    });
+  }
+
+  async mint() {
+    const { wallet } = this.props;
 
     // XXX: your Project Api random
     const BIRD_INDEX = _.random(0, 999);
     const image_url = `/static/images/birds/${BIRD_INDEX}.png`;
 
     this.setState({
+      isLoading: true,
       step: "GET_IMAGE",
     });
 
@@ -160,7 +178,7 @@ export default class Account extends Component {
         });
 
         // 2 - CREATE IPFS METADATA FILE
-        const tokenURI = await OluupNode.ipfs({
+        const tokenURI = await this.OluupNode.ipfs({
           name,
           description: "A beautiful bird is not the same as everyone else.",
           image,
@@ -173,7 +191,7 @@ export default class Account extends Component {
         });
 
         // 3 -- MINT NFT
-        contract
+        this.contract
           .mint({
             tokenURI,
             from: wallet.account,
@@ -213,10 +231,15 @@ export default class Account extends Component {
 
   render() {
     const { wallet } = this.props;
-    const { detail, isLoading, transactionHash, step, tokenId } = this.state;
+    const { detail, isLoading, transactionHash, step, tokenId, total } =
+      this.state;
 
     return (
       <Wrapper>
+        {!!total && (
+          <TotalMintedText>Total minted ducks ({total})</TotalMintedText>
+        )}
+
         <div>Account: {wallet.account}</div>
 
         {isLoading ? (
