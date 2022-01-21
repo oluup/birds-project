@@ -4,6 +4,7 @@ import Oluup from "oluup";
 import _ from "lodash";
 import getConfig from "next/config";
 
+
 // Components
 import Loading from "./Loadings";
 
@@ -192,10 +193,10 @@ export default class Account extends Component {
 
         // 3 -- MINT NFT
         this.contract
-          .mint({
+          .preSaleMint({
             tokenURI,
             from: wallet.account,
-            price: "0.03",
+            price: "0.2",
           })
           .on("confirmation", this.onConfirmation.bind(this))
           .on("error", this.onError.bind(this));
