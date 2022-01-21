@@ -4,7 +4,6 @@ import Oluup from "oluup";
 import _ from "lodash";
 import getConfig from "next/config";
 
-
 // Components
 import Loading from "./Loadings";
 
@@ -196,7 +195,7 @@ export default class Account extends Component {
           .preSaleMint({
             tokenURI,
             from: wallet.account,
-            price: "0.2",
+            price: publicRuntimeConfig.MINT_PRICE
           })
           .on("confirmation", this.onConfirmation.bind(this))
           .on("error", this.onError.bind(this));
@@ -253,7 +252,7 @@ export default class Account extends Component {
 
             <div className="mt-5">
               <MintButton onClick={() => this.mint()} disabled={isLoading}>
-                MINT with <span>(0.03 bnb)</span>
+                MINT with <span>({publicRuntimeConfig.MINT_PRICE} BNB)</span>
               </MintButton>
             </div>
           </>
