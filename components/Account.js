@@ -190,6 +190,13 @@ export default class Account extends Component {
           step: "CONFIRM_NFT",
         });
 
+
+        console.log({
+          tokenURI,
+          from: wallet.account,
+          price: publicRuntimeConfig.MINT_PRICE
+        });
+
         // 3 -- MINT NFT
         this.contract
           .preSaleMint({
