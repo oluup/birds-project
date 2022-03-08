@@ -6861,10 +6861,10 @@ oboe@2.1.5:
   dependencies:
     http-https "^1.0.0"
 
-oluup@^0.0.19:
-  version "0.0.19"
-  resolved "https://registry.yarnpkg.com/oluup/-/oluup-0.0.19.tgz#1f6f36ce40b727b03d4edfc459768ba4a9403cd7"
-  integrity sha512-SYmTZgeiSI3vyrzTZzulwSM1NSfzj5NsoPYQFYWwIfjiLifoh5U1Pe9UE+DofZ9SQ9/P3Op773cgadR+5VAbQA==
+oluup@^0.0.20:
+  version "0.0.20"
+  resolved "https://registry.yarnpkg.com/oluup/-/oluup-0.0.20.tgz#fca2842572e0698405fc81f7a4302af7dc1fc2a1"
+  integrity sha512-/jGIAFCAEboha+DfmFfqh4hLIir5cQF88MuYRl1hVP9MU/+J/6Oxh490oQ/4DVOpEGv8DYRd9qTbLnYYeRDQRg==
   dependencies:
     axios "^0.24.0"
     nft.storage "^5.2.0"

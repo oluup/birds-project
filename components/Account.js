@@ -3,6 +3,7 @@ import Styled from "styled-components";
 import Oluup from "oluup";
 import _ from "lodash";
 import getConfig from "next/config";
+import Web3 from "web3";
 
 // Components
 import Loading from "./Loadings";
@@ -190,20 +191,12 @@ export default class Account extends Component {
           step: "CONFIRM_NFT",
         });
 
-
-        console.log({
-          tokenURI,
-          from: wallet.account,
-          price: publicRuntimeConfig.MINT_PRICE
-        });
+        // [ [<tokenURI>, <MINT_PRICE>, <ROYALITY>] ]
+        const items = [[tokenURI, publicRuntimeConfig.MINT_PRICE, 0]];
 
         // 3 -- MINT NFT
         this.contract
-          .preSaleMint({
-            tokenURI,
-            from: wallet.account,
-            price: publicRuntimeConfig.MINT_PRICE
-          })
+          .preSaleMint(items, wallet.account)
           .on("confirmation", this.onConfirmation.bind(this))
           .on("error", this.onError.bind(this));
       });
@@ -259,7 +252,7 @@ export default class Account extends Component {
 
             <div className="mt-5">
               <MintButton onClick={() => this.mint()} disabled={isLoading}>
-                MINT with <span>({publicRuntimeConfig.MINT_PRICE} BNB)</span>
+                MINT with <span>({Web3.utils.fromWei(publicRuntimeConfig.MINT_PRICE)} BNB)</span>
               </MintButton>
             </div>
           </>
