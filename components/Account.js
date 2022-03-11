@@ -4,12 +4,17 @@ import Oluup from "oluup";
 import _ from "lodash";
 import getConfig from "next/config";
 import Web3 from "web3";
+import InputNumber from "rc-input-number";
 
 // Components
 import Loading from "./Loadings";
 
 const Wrapper = Styled.div`
-
+  .rc-input-number {
+    display: block;
+    margin: auto;
+    margin-bottom: 30px;
+  }
 `;
 
 const ConnectButton = Styled.button`
@@ -59,12 +64,12 @@ const OluupButton = Styled(ConnectButtonLink)`
 `;
 
 const DetailContent = Styled.div`
-    width: 300px;
     background: #f1ce10;
     border-radius: 10px;
     padding: 20px 0;
     margin: 20px auto;
-
+    display: flex;
+    
     img {
       width: 250px;
       height: 250px;
@@ -90,6 +95,10 @@ const DetailContent = Styled.div`
         font-weight: bold;
       }
     }
+
+    .bird-item {
+      margin: 0 5px;
+    }
 `;
 
 const TotalMintedText = Styled.span`
@@ -111,6 +120,9 @@ export default class Account extends Component {
     step: "CONNECTING OLUUP",
     tokenId: null,
     total: 0,
+    mintCount: 1,
+
+    birds: [],
   };
 
   async componentDidMount() {
@@ -132,74 +144,89 @@ export default class Account extends Component {
     });
   }
 
-  async mint() {
-    const { wallet } = this.props;
+  randomBird() {
+    const i = _.random(0, 999);
 
-    // XXX: your Project Api random
-    const BIRD_INDEX = _.random(0, 999);
-    const image_url = `/static/images/birds/${BIRD_INDEX}.png`;
+    return {
+      name: `Bird #${i}`,
+      image: `/static/images/birds/${i}.png`,
+      attributes: [
+        {
+          trait_type: "Speed",
+          value: _.random(0, 100),
+        },
+
+        {
+          trait_type: "Wing",
+          value: _.random(0, 100),
+        },
+
+        {
+          trait_type: "Max Flying",
+          value: _.random(0, 100),
+        },
+      ],
+    };
+  }
+
+  async mint() {
+    const { mintCount } = this.state;
+    const { wallet } = this.props;
+    const out = [];
+
+    const birds = _.range(0, mintCount).map((i) => {
+      const bird = this.randomBird();
+
+      // push bird.
+      out.push(bird);
+
+      return new Promise((resolve) => {
+        fetch(bird.image)
+          .then((r) => r.blob())
+          .then(async (image) => {
+            // 2 - CREATE IPFS METADATA FILE
+            const tokenURI = await this.OluupNode.ipfs({
+              name: bird.name,
+              description: "A beautiful bird is not the same as everyone else.",
+              image,
+
+              attributes: bird.attributes,
+            });
+
+            resolve(tokenURI);
+          });
+      });
+    });
 
     this.setState({
       isLoading: true,
-      step: "GET_IMAGE",
+      step: "UPLOAD_IPFS",
+      birds: [],
     });
 
-    // 1 -- GET IMAGE
-    return fetch(image_url)
-      .then((r) => r.blob())
-      .then(async (image) => {
-        const name = `Bird #${BIRD_INDEX}`;
-        const attributes = [
-          {
-            trait_type: "Speed",
-            value: _.random(0, 100),
-          },
-
-          {
-            trait_type: "Wing",
-            value: _.random(0, 100),
-          },
-
-          {
-            trait_type: "Max Flying",
-            value: _.random(0, 100),
-          },
-        ];
-
-        this.setState({
-          detail: {
-            name,
-            image_url,
-            attributes,
-          },
-        });
-
-        this.setState({
-          step: "UPLOAD_IPFS",
-        });
-
-        // 2 - CREATE IPFS METADATA FILE
-        const tokenURI = await this.OluupNode.ipfs({
-          name,
-          description: "A beautiful bird is not the same as everyone else.",
-          image,
-
-          attributes,
-        });
-
-        this.setState({
-          step: "CONFIRM_NFT",
-        });
-
-        // [ [<tokenURI>, <MINT_PRICE>, <ROYALITY>] ]
-        const items = [[tokenURI, publicRuntimeConfig.MINT_PRICE, 0]];
-
-        // 3 -- MINT NFT
-        this.contract
-          .preSaleMint(items, wallet.account)
-          .on("confirmation", this.onConfirmation.bind(this))
-          .on("error", this.onError.bind(this));
+    Promise.all(birds).then((list) => {
+      const items = list.map((tokenURI) => {
+        return [tokenURI, publicRuntimeConfig.MINT_PRICE, 0];
       });
+
+      this.setState({
+        step: "CONFIRM_NFT",
+      });
+
+      this.contract
+        .preSaleMint(items, wallet.account)
+        .on("confirmation", (confirmationNumber, receipt) => {
+          this.setState(
+            {
+              birds: out,
+            },
+            () => {
+              this.onConfirmation(confirmationNumber, receipt);
+            }
+          );
+        })
+        .on("error", this.onError.bind(this));
+    });
   }
 
   onConfirmation(confirmationNumber, receipt) {
@@ -215,7 +242,6 @@ export default class Account extends Component {
         isLoading: false,
         transactionHash: receipt.transactionHash,
         step: null,
-        tokenId: returnValues._tokenId,
       });
     }
   }
@@ -223,16 +249,29 @@ export default class Account extends Component {
   onError() {
     this.setState({
       isLoading: false,
-      detail: null,
+      birds: [],
       confirmationNumber: 0,
       step: null,
     });
   }
 
+  getMintPrice() {
+    const { mintCount } = this.state;
+
+    return parseInt(publicRuntimeConfig.MINT_PRICE * mintCount).toString();
+  }
+
   render() {
     const { wallet } = this.props;
-    const { detail, isLoading, transactionHash, step, tokenId, total } =
-      this.state;
+    const {
+      mintCount,
+      isLoading,
+      transactionHash,
+      step,
+      tokenId,
+      total,
+      birds,
+    } = this.state;
 
     return (
       <Wrapper>
@@ -251,8 +290,20 @@ export default class Account extends Component {
             </ConnectButton>
 
             <div className="mt-5">
+              <InputNumber
+                min={1}
+                max={5}
+                defaultValue={mintCount}
+                onChange={(mintCount) => {
+                  this.setState({
+                    mintCount,
+                  });
+                }}
+              />
+
               <MintButton onClick={() => this.mint()} disabled={isLoading}>
-                MINT with <span>({Web3.utils.fromWei(publicRuntimeConfig.MINT_PRICE)} BNB)</span>
+                MINT with{" "}
+                <span>({Web3.utils.fromWei(this.getMintPrice())} BNB)</span>
               </MintButton>
             </div>
           </>
@@ -260,33 +311,39 @@ export default class Account extends Component {
 
         {!!transactionHash && (
           <DetailContent>
-            <img src={detail.image_url} />
+            {birds.map((detail, i) => {
+              return (
+                <div className="bird-item" key={i}>
+                  <img src={detail.image} />
 
-            <p>{detail.name}</p>
+                  <p>{detail.name}</p>
 
-            <ul>
-              {detail.attributes.map(({ trait_type, value }, i) => {
-                return (
-                  <li key={i}>
-                    {trait_type}:{value}
-                  </li>
-                );
-              })}
-            </ul>
+                  <ul>
+                    {detail.attributes.map(({ trait_type, value }, i) => {
+                      return (
+                        <li key={i}>
+                          {trait_type}:{value}
+                        </li>
+                      );
+                    })}
+                  </ul>
 
-            <OluupButton
-              href={`https://testnet.oluup.com/assets/${publicRuntimeConfig.COLLECTION_ADDRESS}-${tokenId}?status=CREATED`}
-              target="_blank"
-            >
-              View With Oluup
-            </OluupButton>
+                  <OluupButton
+                    href={`https://testnet.oluup.com/assets/${publicRuntimeConfig.COLLECTION_ADDRESS}-${tokenId}?status=CREATED`}
+                    target="_blank"
+                  >
+                    View With Oluup
+                  </OluupButton>
 
-            <a
-              href={`https://testnet.bscscan.com/tx/${transactionHash}`}
-              target="_blank"
-            >
-              View Transaction Details
-            </a>
+                  <a
+                    href={`https://testnet.bscscan.com/tx/${transactionHash}`}
+                    target="_blank"
+                  >
+                    View Transaction Details
+                  </a>
+                </div>
+              );
+            })}
           </DetailContent>
         )}
       </Wrapper>
